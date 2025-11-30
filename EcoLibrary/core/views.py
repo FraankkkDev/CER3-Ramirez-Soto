@@ -6,16 +6,13 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
-
 from .models import Libro, Favorito
 from rest_framework import viewsets, permissions
 from .serializers import LibroSerializer, LibroDetalleSerializer
 
 
-
 def obtener_datos_api_externa(titulo_o_id):
     import requests 
-
 
     API_URL = f"https://openlibrary.org/search.json?title={titulo_o_id}"
     
@@ -23,7 +20,7 @@ def obtener_datos_api_externa(titulo_o_id):
         response = requests.get(API_URL, timeout=5)
         response.raise_for_status() 
         data = response.json()
-
+        
         if data and data.get('docs'):
             first_doc = data['docs'][0]
             return {
@@ -37,35 +34,40 @@ def obtener_datos_api_externa(titulo_o_id):
         
     return {"mensaje": "No se encontraron datos complementarios en la API externa."}
 
-
 def registro_view(request):
-    if request.method == 'POST':
 
+    if request.method == 'POST':
         form = UserCreationForm(request.POST) 
         if form.is_valid():
             user = form.save()
             login(request, user) 
-            return redirect('lista_libros') 
+            return redirect('lista_libros')
     else:
         form = UserCreationForm()
     return render(request, 'core/registro.html', {'form': form})
 
 class LibroListView(ListView):
     model = Libro
-    template_name = 'core/lista_libros.html' 
+    template_name = 'core/lista_libros.html'
     context_object_name = 'libros'
 
 class LibroDetailView(DetailView):
     model = Libro
-    template_name = 'core/detalle_libro.html' 
+    template_name = 'core/detalle_libro.html'
     context_object_name = 'libro'
-
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         libro = self.get_object()
         context['datos_externos'] = obtener_datos_api_externa(libro.titulo) 
+        user = self.request.user
+        if user.is_authenticated:
+            context['is_favorito'] = Favorito.objects.filter(
+                usuario=user, 
+                libro=libro
+            ).exists()
         return context
-    
+
 @login_required
 def marcar_favorito_view(request, libro_id):
     libro = get_object_or_404(Libro, pk=libro_id)
@@ -73,18 +75,16 @@ def marcar_favorito_view(request, libro_id):
     
     if request.method == 'POST':
         if favorito_qs.exists():
-
-            favorito_qs.delete() 
+            favorito_qs.delete()
         else:
             Favorito.objects.create(usuario=request.user, libro=libro) 
-
+            
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse_lazy('detalle_libro', kwargs={'pk': libro_id})))
-
 
 @method_decorator(login_required, name='dispatch') 
 class FavoritoListView(ListView):
     model = Favorito
-    template_name = 'core/lista_favoritos.html'
+    template_name = 'core/lista_favoritos.html' 
     context_object_name = 'favoritos'
 
     def get_queryset(self):
@@ -96,13 +96,13 @@ class FavoritoDeleteView(DeleteView):
     success_url = reverse_lazy('lista_favoritos') 
     template_name = 'core/confirmar_eliminacion_favorito.html' 
 
-
     def get_queryset(self):
         return Favorito.objects.filter(usuario=self.request.user)
 
 
 class LibroViewSet(viewsets.ModelViewSet):
-    queryset = Libro.objects.all()    
+    queryset = Libro.objects.all()
+    
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return LibroDetalleSerializer

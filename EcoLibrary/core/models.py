@@ -7,7 +7,7 @@ class Libro(models.Model):
     descripcion = models.TextField(verbose_name="Descripción breve")
     categoria = models.CharField(max_length=100)
     anio_publicacion = models.PositiveIntegerField(verbose_name="Año de publicación")
-   
+    
     imagen_url = models.URLField(blank=True, null=True) 
     
     def __str__(self):
@@ -19,7 +19,7 @@ class Favorito(models.Model):
     fecha_agregado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('usuario', 'libro')
+        unique_together = ('usuario', 'libro') 
         verbose_name = "Favorito"
         verbose_name_plural = "Favoritos"
 

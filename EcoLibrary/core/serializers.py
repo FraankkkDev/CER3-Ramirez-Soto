@@ -14,7 +14,7 @@ class LibroDetalleSerializer(LibroSerializer):
         
     def get_informacion_complementaria(self, obj):
         from .utils import obtener_datos_api_externa 
-        
+
         try:
             return obtener_datos_api_externa(obj.titulo)
         except Exception:

@@ -9,7 +9,6 @@ class LibroAdmin(admin.ModelAdmin):
 
 @admin.register(Favorito)
 class FavoritoAdmin(admin.ModelAdmin):
-    list_display = ('libro', 'usuario', 'fecha_agregado')
-    search_fields = ('libro__titulo', 'usuario__username')
+    list_display = ('usuario', 'libro', 'fecha_agregado')
+    search_fields = ('usuario__username', 'libro__titulo')
     list_filter = ('fecha_agregado',)
-
